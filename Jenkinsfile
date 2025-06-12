@@ -26,7 +26,7 @@ pipeline {
                 bat 'dotnet test --no-build --verbosity normal'
             }
         }
-        stage('Publish') {
+        stage('Publish to folder') {
             steps {
                 echo 'publishing'
                 bat 'dotnet publish -c Release -o ./publish'
@@ -47,7 +47,7 @@ pipeline {
 
         # Nếu chưa có website "MySite", thì tạo mới
         if (-not (Test-Path IIS:\\Sites\\MySite)) {
-            New-Website -Name "MySite" -Port 81 -PhysicalPath "c:\\test1-netcore"
+            New-Website -Name "MySite" -Port 40000 -PhysicalPath "c:\\test1-netcore"
         }
         '''
     }
