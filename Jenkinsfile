@@ -5,7 +5,7 @@ pipeline {
         stage('Clone') {
             steps {
                 echo 'Cloning source code'
-                git 'https://github.com/huysong/gitnetcore.git'
+                git url: 'https://github.com/huysong/gitnetcore.git', branch: 'main'
             }
         }
         stage('Restore package'){
