@@ -1,6 +1,11 @@
 pipeline {
     agent any
 
+    environment {
+        PUBLISH_DIR = "${WORKSPACE}\\publish"
+        DEPLOY_DIR = "C:\\wwwroot\\myproject"
+    }
+
     stages {
         stage('Clone') {
             steps {
@@ -8,50 +13,62 @@ pipeline {
                 git url: 'https://github.com/huysong/gitnetcore.git', branch: 'main'
             }
         }
-        stage('Restore package'){
-            steps{
-                echo 'Restore package'
+
+        stage('Restore package') {
+            steps {
+                echo 'Restoring NuGet packages...'
                 bat 'dotnet restore'
             }
         }
+
         stage('Build') {
             steps {
-                echo 'build project netcore'
-                bat 'dotnet build  --configuration Release'
+                echo 'Building project (Release)...'
+                bat 'dotnet build --configuration Release'
             }
         }
+
         stage('Test') {
             steps {
-                echo 'running test...'
+                echo 'Running tests...'
                 bat 'dotnet test --no-build --verbosity normal'
             }
         }
+
         stage('Publish to folder') {
             steps {
-                echo 'publishing'
-                bat 'dotnet publish -c Release -o ./publish'
+                echo 'Publishing application to folder...'
+                bat "dotnet publish -c Release -o \"${env.PUBLISH_DIR}\""
             }
         }
-        stage ('Publish') {
-	        steps {
-		        echo 'public to running folder'
-		        // iisreset /stop // dừng IIS nếu cần
-		        bat 'xcopy "%WORKSPACE%\\publish" /E /Y /I /R "c:\\wwwroot\\myproject"'
- 	        }
+
+        stage('Copy to deployment folder') {
+            steps {
+                echo 'Copying published files to deploy directory...'
+                // Đảm bảo thư mục đích tồn tại
+                bat "if not exist \"${env.DEPLOY_DIR}\" mkdir \"${env.DEPLOY_DIR}\""
+                bat "xcopy \"${env.PUBLISH_DIR}\" \"${env.DEPLOY_DIR}\" /E /Y /I /R"
+            }
         }
+
         stage('Deploy to IIS') {
             steps {
+                echo 'Deploying to IIS...'
                 powershell '''
-        # Tải module IIS
-        Import-Module WebAdministration
+                    Import-Module WebAdministration
 
-        # Nếu chưa có website "MySite", thì tạo mới
-        if (-not (Test-Path IIS:\\Sites\\MySite)) {
-            New-Website -Name "MySite" -Port 40000 -PhysicalPath "c:\\test1-netcore"
+                    $siteName = "MySite"
+                    $sitePath = "C:\\wwwroot\\myproject"
+                    $sitePort = 40000
+
+                    if (-not (Test-Path "IIS:\\Sites\\$siteName")) {
+                        New-Website -Name $siteName -Port $sitePort -PhysicalPath $sitePath -Force
+                    }
+                    else {
+                        Write-Host "Website '$siteName' already exists."
+                    }
+                '''
+            }
         }
-        '''
-    }
-}
-
     }
 }
