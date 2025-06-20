@@ -2,6 +2,7 @@
 
 // Add services to the container.
 builder.Services.AddControllersWithViews();
+builder.WebHost.UseUrls("http://0.0.0.0:40070");
 
 var app = builder.Build();
 
